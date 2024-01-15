@@ -9,7 +9,7 @@ using namespace std;
 
 int main()
 {
-	// 소켓 생성 및 초기화
+	// 1. Socket 시작 작업
 	WSAData wsaData;
 	int Result = WSAStartup(MAKEWORD(2, 2), &wsaData);
 
@@ -19,6 +19,7 @@ int main()
 		exit(-1);
 	}
 
+	// 2. 소켓 생성
 	SOCKET ListenSocket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (ListenSocket == INVALID_SOCKET)
 	{
@@ -26,13 +27,16 @@ int main()
 		exit(-1);
 	}
 
+	// 3. 소켓 주소값 생성 및 초기화
 	SOCKADDR_IN ListenSockAddr;
 	memset(&ListenSockAddr, 0, sizeof(ListenSockAddr));
-	
+
+	// 4. 소켓 주소 상세 설정
 	ListenSockAddr.sin_family = AF_INET;
 	ListenSockAddr.sin_addr.s_addr = INADDR_ANY;
 	ListenSockAddr.sin_port = htons(5001);
 
+	// 5. 소켓 연결 작업
 	Result = bind(ListenSocket, (SOCKADDR*)&ListenSockAddr, sizeof(ListenSockAddr));
 	if (Result == SOCKET_ERROR)
 	{
@@ -40,6 +44,7 @@ int main()
 		exit(-1);
 	}
 
+	// 6. 소켓 연결 설정
 	Result = listen(ListenSocket, 5);
 	if (Result == SOCKET_ERROR)
 	{
@@ -47,55 +52,60 @@ int main()
 		exit(-1);
 	}
 
+	// 7. 클라이언트용 소켓 주소 생성 및 초기화
+	SOCKADDR_IN ClientSockAddr;
+	memset(&ClientSockAddr, 0, sizeof(ClientSockAddr));
+	int ClientSockAddrLength = sizeof(ClientSockAddr);
 
-		SOCKADDR_IN ClientSockAddr;
-		memset(&ClientSockAddr, 0, sizeof(ClientSockAddr));
-		int ClientSockAddrLength = sizeof(ClientSockAddr);
+	// 8. 클라이언트 소켓 생성 및 수락 작업
+	SOCKET ClientSocket = accept(ListenSocket, (SOCKADDR*)&ClientSockAddr, &ClientSockAddrLength);
+	if (ClientSocket == INVALID_SOCKET)
+	{
+		cout << "accpet fail : " << GetLastError() << endl;
+		exit(-1);
+	}
 
-		SOCKET ClientSocket = accept(ListenSocket, (SOCKADDR*)&ClientSockAddr, &ClientSockAddrLength);
-		if (ClientSocket == INVALID_SOCKET)
-		{
-			cout << "accpet fail : " << GetLastError() << endl;
-			exit(-1);
-		}
+	// 9. 보내는 내용(Buffer) 작성
+	char Buffer[1024] = { 0, };
+	sprintf(Buffer, "show me the money.");
 
-		char Buffer[1024] = { 0, };
-		sprintf(Buffer, "show me the money.");
+	// 10. 보내는 작업 진행
+	int SentByte = send(ClientSocket, Buffer, (int)strlen(Buffer) + 1, 0);
+	if (SentByte < 0)
+	{
+		cout << "Error : " << GetLastError() << endl;
+		exit(-1);
+	}
+	else if (SentByte == 0)
+	{
+		cout << "Disconnected : " << GetLastError() << endl;
+		exit(-1);
+	}
+	else
+	{
+		cout << "Sent Byte : " << SentByte << ", " << Buffer << endl;
+	}
 
-		int SentByte = send(ClientSocket, Buffer, (int)strlen(Buffer) + 1, 0);
-		if (SentByte < 0)
-		{
-			cout << "Error : " << GetLastError() << endl;
-			exit(-1);
-		}
-		else if (SentByte == 0)
-		{
-			cout << "Disconnected : " << GetLastError() << endl;
-			exit(-1);
-		}
-		else
-		{
-			cout << "Sent Byte : " << SentByte << ", " << Buffer << endl;
-		}
+	// 11. 받는 내용(Buffer) 작성 및 작업 진행
+	char RecvBuffer[1024] = { 0, };
+	int RecvByte = recv(ClientSocket, RecvBuffer, sizeof(RecvBuffer), 0);
+	if (RecvByte < 0)
+	{
+		cout << "Error : " << GetLastError() << endl;
+		exit(-1);
+	}
+	else if (RecvByte == 0)
+	{
+		cout << "Disconnected : " << GetLastError() << endl;
+		exit(-1);
+	}
+	else
+	{
+		cout << "Recv Byte : " << RecvByte << ", " << RecvBuffer << endl;
+	}
 
-		char RecvBuffer[1024] = { 0, };
-		int RecvByte = recv(ClientSocket, RecvBuffer, sizeof(RecvBuffer), 0);
-		if (RecvByte < 0)
-		{
-			cout << "Error : " << GetLastError() << endl;
-			exit(-1);
-		}
-		else if (RecvByte == 0)
-		{
-			cout << "Disconnected : " << GetLastError() << endl;
-			exit(-1);
-		}
-		else
-		{
-			cout << "Recv Byte : " << RecvByte << ", " << RecvBuffer << endl;
-		}
-		closesocket(ClientSocket);
-
+	// 12. 소켓 종료 및 정리
+	closesocket(ClientSocket);
 	closesocket(ListenSocket);
 
 	WSACleanup();
