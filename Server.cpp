@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <WinSock2.h>
+#include <WS2tcpip.h>
 
 #pragma comment(lib, "ws2_32")
 
@@ -32,8 +33,9 @@ int main()
 	memset(&ListenSockAddr, 0, sizeof(ListenSockAddr));
 
 	// 4. 소켓 주소 상세 설정
+	// AF_INET6 는 IPv4 와 IPv6 모두 사용 가능합니다.
 	ListenSockAddr.sin_family = AF_INET;
-	ListenSockAddr.sin_addr.s_addr = INADDR_ANY;
+	inet_pton(AF_INET6, "127.0.0.1", &(ListenSockAddr.sin_addr.s_addr));
 	ListenSockAddr.sin_port = htons(5001);
 
 	// 5. 소켓 연결 작업
@@ -66,11 +68,10 @@ int main()
 	}
 
 	// 9. 보내는 내용(Buffer) 작성
-	char Buffer[1024] = { 0, };
-	sprintf(Buffer, "show me the money.");
+	const char Message[] = "show me the money.";
 
 	// 10. 보내는 작업 진행
-	int SentByte = send(ClientSocket, Buffer, (int)strlen(Buffer) + 1, 0);
+	int SentByte = send(ClientSocket, Message, (int)strlen(Message) + 1, 0);
 	if (SentByte < 0)
 	{
 		cout << "Error : " << GetLastError() << endl;
@@ -83,7 +84,7 @@ int main()
 	}
 	else
 	{
-		cout << "Sent Byte : " << SentByte << ", " << Buffer << endl;
+		cout << "Sent Byte : " << SentByte << ", " << Message << endl;
 	}
 
 	// 11. 받는 내용(Buffer) 작성 및 작업 진행
